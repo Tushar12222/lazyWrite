@@ -1,0 +1,190 @@
+/*
+ * @NOTE: Prepend a `~` to css file paths that are in your node_modules
+ *        See https://github.com/webpack-contrib/sass-loader#imports
+ */
+body {
+  position: relative;
+  height: 100vh;
+  background-color: black; /* Solid black background */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
+  overflow: hidden; /* Hide scrollbars */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  /* Removed flex centering from body */
+}
+
+/* Static lines forming the frame */
+.static-line {
+  position: absolute;
+  z-index: 9; /* Below the moving drop */
+}
+
+.static-line.top,
+.static-line.bottom {
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(192, 192, 192, 0.8),
+    transparent
+  ); /* Silver gradient for horizontal lines */
+}
+
+.static-line.left,
+.static-line.right {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(192, 192, 192, 0.8),
+    transparent
+  ); /* Silver gradient for vertical lines */
+}
+
+:root {
+  --line-offset: 10px; /* Distance from the actual edge */
+  --line-thickness: 1px; /* Thinner lines */
+}
+
+.static-line.top {
+  top: var(--line-offset);
+  left: var(--line-offset);
+  right: var(--line-offset);
+  height: var(--line-thickness);
+}
+
+.static-line.right {
+  top: var(--line-offset);
+  right: var(--line-offset);
+  bottom: var(--line-offset);
+  width: var(--line-thickness);
+}
+
+.static-line.left {
+  top: var(--line-offset);
+  left: var(--line-offset);
+  bottom: var(--line-offset);
+  width: var(--line-thickness);
+}
+
+/* Minimal styling for the empty container */
+.empty-ui-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column; /* Allow vertical stacking of content */
+  justify-content: center; /* Center content vertically */
+  align-items: center; /* Center content horizontally */
+  color: silver; /* Default text color */
+  font-size: 2rem;
+  /* Removed position: relative */
+  padding-bottom: 0; /* Remove padding-bottom */
+  box-sizing: border-box; /* Include padding in height */
+}
+
+/* Microphone control styles */
+.microphone-control {
+  z-index: 10; /* Ensure it's above the lines */
+  display: flex;
+  flex-direction: row; /* Arrange button and visualizer horizontally */
+  align-items: center;
+  gap: 15px; /* Gap between button and visualizer */
+  background-color: transparent; /* Make it transparent */
+  box-shadow: none; /* Remove shadow */
+  border-radius: 0; /* Remove border-radius */
+
+  /* Positioning for bottom middle */
+  position: absolute;
+  bottom: 30px; /* Distance from bottom */
+  left: 50%;
+  transform: translateX(-50%);
+  transition: transform 0.3s ease-out; /* Smooth transition for shifting */
+}
+
+.microphone-control.is-recording-active {
+  transform: translateX(calc(-50% - 100px)); /* Shift left by 100px (example value) */
+}
+
+.app-title {
+  color: silver; /* Silver text */
+  font-size: 1.5rem; /* Reduced font size */
+  font-weight: 300; /* Lighter weight for aesthetic */
+  margin-bottom: 30px; /* Space below title */
+  letter-spacing: 2px; /* Slight letter spacing */
+  text-shadow: 0 0 10px rgba(192, 192, 192, 0.3); /* Subtle glow */
+  position: absolute; /* Position absolutely */
+  top: 30px; /* 30px from the top */
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Adjust for own width */
+}
+
+.record-button {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: black; /* Black background when not recording */
+  border: 1px solid white; /* White border when not recording */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease; /* Smooth transition for all properties */
+  position: relative;
+  box-shadow: none; /* No shadow by default */
+}
+
+.record-button:hover {
+  background-color: black; /* Keep background black on hover */
+  box-shadow: 0 0 15px silver; /* Silver glow on hover */
+}
+
+.record-button.is-recording-active {
+  background-color: white; /* White background when recording */
+  border: none; /* No border when recording */
+  box-shadow: none; /* No shadow when recording */
+}
+
+.start-icon-white-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: white; /* White dot when not recording */
+  display: inline-block;
+}
+
+.red-dot-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: red;
+  display: inline-block;
+}
+
+/* Tooltip styles */
+.button-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px); /* Position above the button with some gap */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8); /* Dark background */
+  color: silver;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+  pointer-events: none; /* Allow clicks through tooltip */
+  z-index: 11; /* Above button */
+}
+
+.record-button:hover .button-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Remove all other previous styles */
+li, a, h1, p, .Hello, .button-group, .message-response, .silver-drop {
+  all: unset; /* Reset all properties */
+  display: none; /* Hide them completely */
+}
