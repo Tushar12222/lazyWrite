@@ -104,14 +104,30 @@ function Hello() {
 
       animationFrameIdRef.current = requestAnimationFrame(draw);
 
+      analyserRef.current.getByteTimeDomainData(dataArrayRef.current); // Get waveform data
+
       canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
       canvasCtx.lineWidth = 2;
       canvasCtx.strokeStyle = 'rgba(220, 220, 220, 0.9)'; // Brighter silver line
 
       canvasCtx.beginPath();
-      canvasCtx.moveTo(0, canvas.height / 2);
-      canvasCtx.lineTo(canvas.width, canvas.height / 2);
+
+      const sliceWidth = canvas.width * 1.0 / dataArrayRef.current.length;
+      let x = 0;
+
+      for (let i = 0; i < dataArrayRef.current.length; i++) {
+        const v = dataArrayRef.current[i] / 128.0; // Normalize to 0-2
+        const y = v * canvas.height / 2; // Scale to canvas height
+
+        if (i === 0) {
+          canvasCtx.moveTo(x, y);
+        } else {
+          canvasCtx.lineTo(x, y);
+        }
+
+        x += sliceWidth;
+      }
       canvasCtx.stroke();
     };
     animationFrameIdRef.current = requestAnimationFrame(draw);
