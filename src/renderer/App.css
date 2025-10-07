@@ -91,6 +91,7 @@ body {
   background-color: transparent; /* Make it transparent */
   box-shadow: none; /* Remove shadow */
   border-radius: 0; /* Remove border-radius */
+  height: 120px; /* Fixed height to prevent vertical shift */
 
   /* Positioning for bottom middle */
   position: absolute;
@@ -178,9 +179,21 @@ body {
   z-index: 11; /* Above button */
 }
 
-.record-button:hover .button-tooltip {
-  opacity: 1;
-  visibility: visible;
+.audio-visualizer-container {
+  display: none; /* Hidden by default */
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: width 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.microphone-control.is-recording-active .audio-visualizer-container {
+  display: flex; /* Show when recording */
+  width: 300px; /* Expand to full width */
+  opacity: 1; /* Fade in */
 }
 
 /* Remove all other previous styles */
