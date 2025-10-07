@@ -104,38 +104,15 @@ function Hello() {
 
       animationFrameIdRef.current = requestAnimationFrame(draw);
 
-      analyserRef.current.getByteTimeDomainData(dataArrayRef.current); // Get waveform data
-
       canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
       canvasCtx.lineWidth = 2;
       canvasCtx.strokeStyle = 'rgba(220, 220, 220, 0.9)'; // Brighter silver line
-      canvasCtx.fillStyle = 'rgba(220, 220, 220, 0.3)'; // Brighter silver fill with transparency
 
       canvasCtx.beginPath();
-
-      const sliceWidth = canvas.width * 1.0 / dataArrayRef.current.length;
-      let x = 0;
-
-      for (let i = 0; i < dataArrayRef.current.length; i++) {
-        const v = dataArrayRef.current[i] / 128.0; // Normalize to 0-2
-        const y = v * canvas.height / 2; // Scale to canvas height
-
-        if (i === 0) {
-          canvasCtx.moveTo(x, y);
-        } else {
-          canvasCtx.lineTo(x, y);
-        }
-
-        x += sliceWidth;
-      }
-
-      canvasCtx.lineTo(canvas.width, canvas.height / 2); // Draw to center right
-      canvasCtx.lineTo(canvas.width, canvas.height); // Go to bottom right
-      canvasCtx.lineTo(0, canvas.height); // Go to bottom left
-      canvasCtx.lineTo(0, canvas.height / 2); // Go to center left
-      canvasCtx.fill(); // Fill the shape
-      canvasCtx.stroke(); // Draw the outline
+      canvasCtx.moveTo(0, canvas.height / 2);
+      canvasCtx.lineTo(canvas.width, canvas.height / 2);
+      canvasCtx.stroke();
     };
     animationFrameIdRef.current = requestAnimationFrame(draw);
 

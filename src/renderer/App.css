@@ -160,6 +160,17 @@ body {
   display: inline-block;
 }
 
+.microphone-control canvas {
+  position: absolute;
+  left: calc(100% + 15px); /* Position to the right of the button + gap */
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: transparent;
+  pointer-events: none; /* Allow clicks through canvas */
+  width: 200px; /* Fixed width for the straight line */
+  height: 100px; /* Fixed height */
+}
+
 /* Tooltip styles */
 .button-tooltip {
   position: absolute;
@@ -179,21 +190,9 @@ body {
   z-index: 11; /* Above button */
 }
 
-.audio-visualizer-container {
-  display: none; /* Hidden by default */
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  width: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: width 0.3s ease-out, opacity 0.3s ease-out;
-}
-
-.microphone-control.is-recording-active .audio-visualizer-container {
-  display: flex; /* Show when recording */
-  width: 300px; /* Expand to full width */
-  opacity: 1; /* Fade in */
+.record-button:hover .button-tooltip {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* Remove all other previous styles */
