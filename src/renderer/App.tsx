@@ -178,7 +178,7 @@ function Hello() {
   useEffect(() => {
     const cleanup = window.electron.ipcRenderer.on(
       'python-audio-response',
-      (response) => {
+      (response: any) => {
         try {
           const parsedResponse = JSON.parse(response);
           if (parsedResponse.simulated_amplitude !== undefined) {
