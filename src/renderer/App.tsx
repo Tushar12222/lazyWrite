@@ -108,8 +108,30 @@ function Hello() {
 
       canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
-      canvasCtx.lineWidth = 2;
-      canvasCtx.strokeStyle = 'rgba(220, 220, 220, 0.9)'; // Brighter silver line
+      // Calculate average amplitude for speech detection
+      let sum = 0;
+      for (let i = 0; i < dataArrayRef.current.length; i++) {
+        sum += Math.abs(dataArrayRef.current[i] - 128); // Subtract 128 to center around 0
+      }
+      const averageAmplitude = sum / dataArrayRef.current.length;
+
+      // Define a speech threshold (this value might need adjustment)
+      const speechThreshold = 1; // Very low threshold for slightest voice activity
+
+      const speaking = averageAmplitude > speechThreshold;
+
+      // Apply glow effect if speaking
+      if (speaking) {
+        canvasCtx.lineWidth = 2;
+        canvasCtx.strokeStyle = 'rgba(220, 220, 220, 1)'; // Silver line when speaking
+        canvasCtx.shadowBlur = 10; // Noticeable glow effect
+        canvasCtx.shadowColor = 'rgba(220, 220, 220, 0.8)'; // Silver glow color
+      } else {
+        canvasCtx.lineWidth = 2;
+        canvasCtx.strokeStyle = 'rgba(128, 128, 128, 0.9)'; // Grey line when not speaking
+        canvasCtx.shadowBlur = 0; // No glow
+        canvasCtx.shadowColor = 'transparent';
+      }
 
       canvasCtx.beginPath();
 
