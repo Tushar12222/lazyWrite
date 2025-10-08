@@ -3,40 +3,41 @@ import json
 import base64
 import tempfile
 import os
+import whisper
+from whisper import Whisper
+from typing import cast
+
+whisper_model: Whisper
+
+def decode_base64_to_bytes(audio_base64: str) -> tuple[bytes | None, str | None]:
+    try:
+        return (base64.b64decode(audio_base64), None)
+    except Exception as e:
+        return (None, f"Failed to decode the base64 string with error: ${str(e)}")
 
 # Placeholder for Whisper processing
 def process_audio_with_whisper(audio_file_path):
-    # In a real scenario, you would use the OpenAI Whisper API or a local model here.
-    # Example:
-    # import openai
-    # with open(audio_file_path, "rb") as audio_file:
-    #     transcript = openai.Audio.transcribe("whisper-1", audio_file)["text"]
-    # return transcript
+    
     print(f"Processing audio file with Whisper: {audio_file_path}")
     return f"Transcript from {audio_file_path}: This is a simulated transcript."
 
-def process_audio_data(base64_audio_data):
+def process_audio_data(base64_audio_data: str):
     print(f"Python received Base64 audio data (first 50 chars): {base64_audio_data[:50]}...") # New print statement
-    try:
-        # Decode Base64 audio data
-        audio_bytes = base64.b64decode(base64_audio_data)
+    
+    # Decode Base64 audio data
+    audio_bytes, error = decode_base64_to_bytes(base64_audio_data)
+    if error:
+        return [None, error]
+    audio_bytes = cast(bytes, audio_bytes)
+    assert isinstance(audio_bytes, bytes, f"Decoded audio bytes is not valid type.")
 
-        # Create a temporary file to store the audio
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_audio_file:
-            temp_audio_file.write(audio_bytes)
-            temp_audio_file_path = temp_audio_file.name
+    transcript = process_audio_with_whisper(audio_bytes)
 
-        # Process the audio with Whisper
-        transcript = process_audio_with_whisper(temp_audio_file_path)
 
-        # Clean up the temporary file
-        os.remove(temp_audio_file_path)
-
-        return {"status": "success", "transcript": transcript}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    return {"status": "success", "transcript": transcript}
 
 if __name__ == "__main__":
+    whisper_model = whisper.load_model("./ai_models/whisper/tiny.pt", device="cpu")
     for line in sys.stdin:
         print(f"Python received raw input: {line[:100]}...") # Removed file=sys.stderr
         try:
