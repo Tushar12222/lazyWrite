@@ -2,7 +2,11 @@
 /* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
-export type Channels = 'ipc-example' | 'display-message' | 'display-message-response' | 'toggle-recording';
+export type Channels =
+  | 'ipc-example'
+  | 'display-message'
+  | 'display-message-response'
+  | 'toggle-recording';
 
 const electronHandler = {
   ipcRenderer: {

@@ -2,9 +2,20 @@ import path from 'path';
 import { app, BrowserWindow, shell, ipcMain, globalShortcut } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
+import { spawn } from 'child_process'; // Node.js built-in
+
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import { registerMessageHandlers } from './ipc/messageHandler';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+const sourceMapSupport = require('source-map-support');
+// eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+const electronDebug = require('electron-debug');
+// eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+const electronDevtoolsInstaller = require('electron-devtools-installer');
+
+let pythonProcess: any; // Variable to hold the Python child process
 
 class AppUpdater {
   constructor() {
@@ -18,6 +29,7 @@ let mainWindow: BrowserWindow | null = null;
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
+  // eslint-disable-next-line no-console
   console.log(msgTemplate(arg));
   event.reply('ipc-example', msgTemplate('pong'));
 });
@@ -25,7 +37,6 @@ ipcMain.on('ipc-example', async (event, arg) => {
 registerMessageHandlers();
 
 if (process.env.NODE_ENV === 'production') {
-  const sourceMapSupport = require('source-map-support');
   sourceMapSupport.install();
 }
 
@@ -33,20 +44,23 @@ const isDebug =
   process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
 if (isDebug) {
-  require('electron-debug').default();
+  electronDebug.default();
 }
 
 const installExtensions = async () => {
-  const installer = require('electron-devtools-installer');
+  const installer = electronDevtoolsInstaller;
   const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
   const extensions = ['REACT_DEVELOPER_TOOLS'];
 
-  return installer
-    .default(
-      extensions.map((name) => installer[name]),
-      forceDownload,
-    )
-    .catch(console.log);
+  return (
+    installer
+      .default(
+        extensions.map((name) => installer[name]),
+        forceDownload,
+      )
+      // eslint-disable-next-line no-console
+      .catch(console.log)
+  );
 };
 
 const createWindow = async () => {
@@ -121,19 +135,52 @@ app
   .whenReady()
   .then(() => {
     createWindow();
-    // ...
+
+    // Spawn Python process
+const pythonScriptPath = path.join(process.cwd(), 'src', 'backend', 'audio_processor.py');
+console.log(`Attempting to spawn Python process: python ${pythonScriptPath}`);
+const pythonProcess = spawn('python', [pythonScriptPath]);
+console.log(`Python process spawned with PID: ${pythonProcess.pid}`);
+
+pythonProcess.stdout.on('data', (data) => {
+  console.log(`Python stdout: ${data}`);
+});
+
+pythonProcess.stderr.on('data', (data) => {
+  console.error(`Python stderr: ${data}`);
+});
+
+pythonProcess.on('close', (code) => {
+  console.log(`Python process exited with code ${code}`);
+});
+
+pythonProcess.on('error', (err) => {
+  console.error(`Failed to start Python process: ${err}`);
+});
+
+    // IPC handler for sending audio data to Python
+    ipcMain.on('send-audio-to-python', (event, audioData) => {
+      if (pythonProcess) {
+        pythonProcess.stdin.write(`${JSON.stringify(audioData)}\n`);
+      } else {
+        // eslint-disable-next-line no-console
+        console.error(`Python process not running.`);
+      }
+    });
+
     // Register global shortcut for F5
+    // eslint-disable-next-line no-console
     console.log('Attempting to register global shortcut: F5'); // Debugging
     const ret = globalShortcut.register('F5', () => {
+      // eslint-disable-next-line no-console
       console.log('Global shortcut F5 pressed in main process'); // Debugging
       if (mainWindow) {
         mainWindow.webContents.send('toggle-recording');
-      } else {
-        console.log('mainWindow is null, cannot send IPC message'); // Debugging
       }
     });
 
     if (!ret) {
+      // eslint-disable-next-line no-console
       console.log('Global shortcut registration failed'); // Debugging
     }
 
@@ -142,10 +189,16 @@ app
       // dock icon is clicked and there are no other windows open.
       if (mainWindow === null) createWindow();
     });
+    return null; // Added to satisfy promise/always-return
   })
+  // eslint-disable-next-line no-console
   .catch(console.log);
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  // eslint-disable-next-line no-console
   console.log('Global shortcuts unregistered'); // Debugging
+  if (pythonProcess) {
+    pythonProcess.kill(); // Terminate Python process on app quit
+  }
 });
