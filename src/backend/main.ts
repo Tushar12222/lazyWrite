@@ -137,17 +137,29 @@ app
   .then(() => {
     createWindow();
 
-    // Spawn Python process
-    const pythonScriptPath = path.join(
-      process.cwd(),
-      'src',
-      'backend',
-      'audio_processor.py',
-    );
-    console.log(
-      `Attempting to spawn Python process: python ${pythonScriptPath}`,
-    );
-    pythonProcess = spawn('python', [pythonScriptPath]); // Changed from const to assignment
+    // Spawn Python process/executable
+    const pythonPath = app.isPackaged
+      ? path.join(
+          process.resourcesPath,
+          'dist_python',
+          'audio_processor_executable'
+        )
+      : 'python'; // Use system Python in development
+
+    const pythonArgs = app.isPackaged
+      ? [] // PyInstaller executable is standalone
+      : [
+          path.join(
+            process.cwd(),
+            'src',
+            'backend',
+            'python',
+            'audio_processor.py'
+          )
+        ]; // Pass script path to system Python
+
+    console.log(`Attempting to spawn Python: ${pythonPath} ${pythonArgs.join(' ')}`);
+    pythonProcess = spawn(pythonPath, pythonArgs);
     console.log(`Python process spawned with PID: ${pythonProcess.pid}`);
 
     // Register Python process message handlers

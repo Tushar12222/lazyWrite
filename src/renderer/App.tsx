@@ -4,9 +4,9 @@ import './App.css';
 
 interface PythonAudioResponse {
   status: string;
-  original_data: any; // Adjust type if known
-  simulated_amplitude: number;
-  error?: string;
+  transcript?: string; // New field for the transcript
+  message?: string; // For error messages
+  error?: string; // Keep for general errors
 }
 
 function Hello() {
@@ -32,6 +32,9 @@ function Hello() {
   const animationFrameIdRef = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   const [isSpeakingFromPython, setIsSpeakingFromPython] = useState(false);
 
   const startRecording = useCallback(async () => {
@@ -41,30 +44,67 @@ function Hello() {
       setMediaStream(stream);
       setIsRecording(true);
 
-      // Setup AudioContext for visualization
+      // Setup AudioContext for visualization (existing code)
       audioContextRef.current = new (window.AudioContext ||
         window.webkitAudioContext)();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 2048; // More data points for smoother waveform
-      analyserRef.current.smoothingTimeConstant = 0.8; // Make waveform smoother
+      analyserRef.current.fftSize = 2048;
+      analyserRef.current.smoothingTimeConstant = 0.8;
       analyserRef.current.minDecibels = -90;
       analyserRef.current.maxDecibels = -10;
       source.connect(analyserRef.current);
 
       dataArrayRef.current = new Uint8Array(analyserRef.current.fftSize);
+
+      // --- New MediaRecorder setup ---
+      audioChunksRef.current = []; // Clear previous chunks
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm; codecs=opus' }); // High quality, good compression
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        // Convert Blob to Base64 string
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = () => {
+          const base64data = reader.result;
+          if (base64data) {
+            const base64Audio = (base64data as string).split(',')[1];
+            console.log('Sending audio to Python:', { audio: base64Audio.substring(0, 50) + '...' }); // Log first 50 chars
+            window.electron.ipcRenderer.sendMessage(
+              'send-audio-to-python',
+              { audio: base64Audio }, // Wrap in a JSON object
+            );
+          }
+        };
+        audioChunksRef.current = []; // Clear chunks after sending
+      };
+
+      mediaRecorder.start(); // Start recording
+      // --- End new MediaRecorder setup ---
+
     } catch (err) {
       console.error('Error accessing microphone:', err);
       setError('Could not access microphone. Please check permissions.');
       setIsRecording(false);
     }
-  }, []); // Empty dependency array for startRecording
+  }, []);
 
   const stopRecording = useCallback(() => {
     if (mediaStreamRef.current) {
       // Use ref to get latest mediaStream value
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       setMediaStream(null);
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop(); // Stop the MediaRecorder
     }
     if (audioContextRef.current) {
       audioContextRef.current.close();
@@ -163,26 +203,7 @@ function Hello() {
     };
   }, [isRecording, isSpeakingFromPython]); // Re-run this effect when isRecording or isSpeakingFromPython changes
 
-  // Effect to send audio data to Python backend
-  // eslint-disable-next-line consistent-return
-  useEffect(() => {
-    if (!isRecording) {
-      return () => {}; // Always return a cleanup function, even if empty
-    }
 
-    const interval = setInterval(() => {
-      if (dataArrayRef.current) {
-        // Convert Uint8Array to a regular array for IPC
-        const audioDataArray = Array.from(dataArrayRef.current);
-        window.electron.ipcRenderer.sendMessage(
-          'send-audio-to-python',
-          audioDataArray,
-        );
-      }
-    }, 100); // Send data every 100ms (adjust as needed)
-
-    return () => clearInterval(interval);
-  }, [isRecording]);
 
   // Effect to listen for responses from Python backend
   useEffect(() => {
@@ -192,12 +213,12 @@ function Hello() {
       (response: string) => {
         try {
           const parsedResponse: PythonAudioResponse = JSON.parse(response);
-          if (parsedResponse.simulated_amplitude !== undefined) {
-            // Define a threshold for Python's simulated amplitude
-            const pythonSpeechThreshold = 50; // Adjust this value based on Python's output
-            setIsSpeakingFromPython(
-              parsedResponse.simulated_amplitude > pythonSpeechThreshold,
-            );
+          if (parsedResponse.status === 'success' && parsedResponse.transcript) {
+            console.log('Transcript from Python:', parsedResponse.transcript);
+            // You can now display this transcript in your UI
+            // For example, you might have a state variable to store the transcript
+          } else if (parsedResponse.status === 'error') {
+            console.error('Error from Python:', parsedResponse.message || parsedResponse.error);
           }
         } catch (parseError) {
           console.error('Error parsing Python response:', parseError);
