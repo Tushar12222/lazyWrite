@@ -6,7 +6,9 @@ export type Channels =
   | 'ipc-example'
   | 'display-message'
   | 'display-message-response'
-  | 'toggle-recording';
+  | 'toggle-recording'
+  | 'send-audio-to-python'
+  | 'python-audio-response';
 
 const electronHandler = {
   ipcRenderer: {

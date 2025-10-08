@@ -2,6 +2,13 @@ import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import './App.css';
 
+interface PythonAudioResponse {
+  status: string;
+  original_data: any; // Adjust type if known
+  simulated_amplitude: number;
+  error?: string;
+}
+
 function Hello() {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
@@ -21,7 +28,7 @@ function Hello() {
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const dataArrayRef: React.RefObject<Uint8Array | null> = useRef(null);
   const animationFrameIdRef = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -108,7 +115,7 @@ function Hello() {
 
       animationFrameIdRef.current = requestAnimationFrame(draw);
 
-      analyserRef.current.getByteTimeDomainData(dataArrayRef.current); // Get waveform data
+      analyserRef.current.getByteTimeDomainData(dataArrayRef.current as Uint8Array); // Get waveform data
 
       canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -140,6 +147,8 @@ function Hello() {
           canvasCtx.lineTo(x, y);
         }
 
+        // eslint-disable-next-line no-plusplus
+        // eslint-disable-next-line no-plusplus
         x += sliceWidth;
       }
       canvasCtx.stroke();
@@ -155,9 +164,10 @@ function Hello() {
   }, [isRecording, isSpeakingFromPython]); // Re-run this effect when isRecording or isSpeakingFromPython changes
 
   // Effect to send audio data to Python backend
+  // eslint-disable-next-line consistent-return
   useEffect(() => {
     if (!isRecording) {
-      return;
+      return () => {}; // Always return a cleanup function, even if empty
     }
 
     const interval = setInterval(() => {
@@ -178,9 +188,10 @@ function Hello() {
   useEffect(() => {
     const cleanup = window.electron.ipcRenderer.on(
       'python-audio-response',
-      (response: any) => {
+      // eslint-disable-next-line consistent-return
+      (response: string) => {
         try {
-          const parsedResponse = JSON.parse(response);
+          const parsedResponse: PythonAudioResponse = JSON.parse(response);
           if (parsedResponse.simulated_amplitude !== undefined) {
             // Define a threshold for Python's simulated amplitude
             const pythonSpeechThreshold = 50; // Adjust this value based on Python's output
@@ -188,8 +199,8 @@ function Hello() {
               parsedResponse.simulated_amplitude > pythonSpeechThreshold,
             );
           }
-        } catch (error) {
-          console.error('Error parsing Python response:', error);
+        } catch (parseError) {
+          console.error('Error parsing Python response:', parseError);
         }
       },
     );
@@ -240,6 +251,7 @@ function Hello() {
         <p className="app-title">{isRecording ? 'Stop Recording' : 'F5'}</p>
         {error && <p className="error-message">{error}</p>}
         <button
+          type="button"
           onClick={isRecording ? stopRecording : startRecording}
           className={`record-button ${isRecording ? 'is-recording-active' : ''}`}
           onMouseEnter={() => setShowTooltip(true)}

@@ -1,7 +1,9 @@
 import { ChildProcessWithoutNullStreams } from 'child_process';
 import { ipcMain } from 'electron';
 
-export function registerPythonMessageHandlers(pythonProcess: ChildProcessWithoutNullStreams) {
+export default function registerPythonMessageHandlers(
+  pythonProcess: ChildProcessWithoutNullStreams,
+) {
   pythonProcess.stdout.on('data', (data) => {
     console.log(`Python stdout: ${data}`);
     // You might want to send this data to the renderer process

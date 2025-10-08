@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 
-export function registerMessageHandlers() {
+export default function registerMessageHandlers() {
   ipcMain.on('display-message', async (event, message: string) => {
     console.log('Message from renderer:', message);
     event.reply(

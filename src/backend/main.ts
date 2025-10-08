@@ -6,8 +6,8 @@ import { spawn } from 'child_process'; // Node.js built-in
 
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-import { registerMessageHandlers } from './ipc/messageHandler';
-import { registerPythonMessageHandlers } from './ipc/pythonMessageHandler'; // New import
+import registerMessageHandlers from './ipc/messageHandler';
+import registerPythonMessageHandlers from './ipc/pythonMessageHandler'; // Updated import
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
 const sourceMapSupport = require('source-map-support');
@@ -138,15 +138,20 @@ app
     createWindow();
 
     // Spawn Python process
-const pythonScriptPath = path.join(process.cwd(), 'src', 'backend', 'audio_processor.py');
-console.log(`Attempting to spawn Python process: python ${pythonScriptPath}`);
-const pythonProcess = spawn('python', [pythonScriptPath]);
-console.log(`Python process spawned with PID: ${pythonProcess.pid}`);
+    const pythonScriptPath = path.join(
+      process.cwd(),
+      'src',
+      'backend',
+      'audio_processor.py',
+    );
+    console.log(
+      `Attempting to spawn Python process: python ${pythonScriptPath}`,
+    );
+    pythonProcess = spawn('python', [pythonScriptPath]); // Changed from const to assignment
+    console.log(`Python process spawned with PID: ${pythonProcess.pid}`);
 
     // Register Python process message handlers
     registerPythonMessageHandlers(pythonProcess);
-
-
 
     // Register global shortcut for F5
     // eslint-disable-next-line no-console
