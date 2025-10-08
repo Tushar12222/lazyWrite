@@ -137,28 +137,26 @@ app
     createWindow();
 
     // Spawn Python process
-    pythonProcess = spawn('python3', [
-      path.join(__dirname, 'audio_processor.py'),
-    ]);
+const pythonScriptPath = path.join(process.cwd(), 'src', 'backend', 'audio_processor.py');
+console.log(`Attempting to spawn Python process: python ${pythonScriptPath}`);
+const pythonProcess = spawn('python', [pythonScriptPath]);
+console.log(`Python process spawned with PID: ${pythonProcess.pid}`);
 
-    pythonProcess.stdout.on('data', (data: any) => {
-      // eslint-disable-next-line no-console
-      console.log(`Python stdout: ${data}`);
-      // You might want to send this data back to the renderer process
-      if (mainWindow) {
-        mainWindow.webContents.send('python-audio-response', data.toString());
-      }
-    });
+pythonProcess.stdout.on('data', (data) => {
+  console.log(`Python stdout: ${data}`);
+});
 
-    pythonProcess.stderr.on('data', (data: any) => {
-      // eslint-disable-next-line no-console
-      console.error(`Python stderr: ${data}`);
-    });
+pythonProcess.stderr.on('data', (data) => {
+  console.error(`Python stderr: ${data}`);
+});
 
-    pythonProcess.on('close', (code: any) => {
-      // eslint-disable-next-line no-console
-      console.log(`Python process exited with code ${code}`);
-    });
+pythonProcess.on('close', (code) => {
+  console.log(`Python process exited with code ${code}`);
+});
+
+pythonProcess.on('error', (err) => {
+  console.error(`Failed to start Python process: ${err}`);
+});
 
     // IPC handler for sending audio data to Python
     ipcMain.on('send-audio-to-python', (event, audioData) => {
