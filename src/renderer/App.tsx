@@ -25,6 +25,8 @@ function Hello() {
   const animationFrameIdRef = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const [isSpeakingFromPython, setIsSpeakingFromPython] = useState(false);
+
   const startRecording = useCallback(async () => {
     setError(null);
     try {
@@ -33,7 +35,8 @@ function Hello() {
       setIsRecording(true);
 
       // Setup AudioContext for visualization
-      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      audioContextRef.current = new (window.AudioContext ||
+        window.webkitAudioContext)();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 2048; // More data points for smoother waveform
@@ -43,7 +46,6 @@ function Hello() {
       source.connect(analyserRef.current);
 
       dataArrayRef.current = new Uint8Array(analyserRef.current.fftSize);
-
     } catch (err) {
       console.error('Error accessing microphone:', err);
       setError('Could not access microphone. Please check permissions.');
@@ -52,7 +54,8 @@ function Hello() {
   }, []); // Empty dependency array for startRecording
 
   const stopRecording = useCallback(() => {
-    if (mediaStreamRef.current) { // Use ref to get latest mediaStream value
+    if (mediaStreamRef.current) {
+      // Use ref to get latest mediaStream value
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       setMediaStream(null);
     }
@@ -65,6 +68,7 @@ function Hello() {
       animationFrameIdRef.current = null;
     }
     setIsRecording(false);
+    setIsSpeakingFromPython(false); // Reset speaking state when recording stops
   }, []); // Empty dependency array for stopRecording
 
   // Cleanup on component unmount
@@ -108,20 +112,8 @@ function Hello() {
 
       canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Calculate average amplitude for speech detection
-      let sum = 0;
-      for (let i = 0; i < dataArrayRef.current.length; i++) {
-        sum += Math.abs(dataArrayRef.current[i] - 128); // Subtract 128 to center around 0
-      }
-      const averageAmplitude = sum / dataArrayRef.current.length;
-
-      // Define a speech threshold (this value might need adjustment)
-      const speechThreshold = 1; // Very low threshold for slightest voice activity
-
-      const speaking = averageAmplitude > speechThreshold;
-
-      // Apply glow effect if speaking
-      if (speaking) {
+      // Use isSpeakingFromPython for conditional styling
+      if (isSpeakingFromPython) {
         canvasCtx.lineWidth = 2;
         canvasCtx.strokeStyle = 'rgba(220, 220, 220, 1)'; // Silver line when speaking
         canvasCtx.shadowBlur = 10; // Noticeable glow effect
@@ -135,12 +127,12 @@ function Hello() {
 
       canvasCtx.beginPath();
 
-      const sliceWidth = canvas.width * 1.0 / dataArrayRef.current.length;
+      const sliceWidth = (canvas.width * 1.0) / dataArrayRef.current.length;
       let x = 0;
 
       for (let i = 0; i < dataArrayRef.current.length; i++) {
         const v = dataArrayRef.current[i] / 128.0; // Normalize to 0-2
-        const y = v * canvas.height / 2; // Scale to canvas height
+        const y = (v * canvas.height) / 2; // Scale to canvas height
 
         if (i === 0) {
           canvasCtx.moveTo(x, y);
@@ -160,7 +152,52 @@ function Hello() {
         animationFrameIdRef.current = null;
       }
     };
-  }, [isRecording]); // Re-run this effect when isRecording changes
+  }, [isRecording, isSpeakingFromPython]); // Re-run this effect when isRecording or isSpeakingFromPython changes
+
+  // Effect to send audio data to Python backend
+  useEffect(() => {
+    if (!isRecording) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      if (dataArrayRef.current) {
+        // Convert Uint8Array to a regular array for IPC
+        const audioDataArray = Array.from(dataArrayRef.current);
+        window.electron.ipcRenderer.sendMessage(
+          'send-audio-to-python',
+          audioDataArray,
+        );
+      }
+    }, 100); // Send data every 100ms (adjust as needed)
+
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
+  // Effect to listen for responses from Python backend
+  useEffect(() => {
+    const cleanup = window.electron.ipcRenderer.on(
+      'python-audio-response',
+      (response) => {
+        try {
+          const parsedResponse = JSON.parse(response);
+          if (parsedResponse.simulated_amplitude !== undefined) {
+            // Define a threshold for Python's simulated amplitude
+            const pythonSpeechThreshold = 50; // Adjust this value based on Python's output
+            setIsSpeakingFromPython(
+              parsedResponse.simulated_amplitude > pythonSpeechThreshold,
+            );
+          }
+        } catch (error) {
+          console.error('Error parsing Python response:', error);
+        }
+      },
+    );
+
+    return () => {
+      cleanup();
+    };
+  }, []); // Empty dependency array, runs once on mount
 
   // Effect to trigger recording based on toggleRecordingTrigger
   useEffect(() => {
@@ -176,11 +213,14 @@ function Hello() {
 
   // Handle global shortcut for recording
   const toggleRecordingListener = useCallback(() => {
-    setToggleRecordingTrigger(prev => !prev);
+    setToggleRecordingTrigger((prev) => !prev);
   }, []);
 
   useEffect(() => {
-    const cleanup = window.electron.ipcRenderer.on('toggle-recording', toggleRecordingListener);
+    const cleanup = window.electron.ipcRenderer.on(
+      'toggle-recording',
+      toggleRecordingListener,
+    );
 
     return () => {
       cleanup(); // Call the cleanup function returned by preload.ts
@@ -189,12 +229,14 @@ function Hello() {
 
   return (
     <div className="empty-ui-container">
-      <div className="static-line top"></div>
-      <div className="static-line right"></div>
-      <div className="static-line bottom"></div>
-      <div className="static-line left"></div>
+      <div className="static-line top" />
+      <div className="static-line right" />
+      <div className="static-line bottom" />
+      <div className="static-line left" />
 
-      <div className={`microphone-control ${isRecording ? 'is-recording-active' : ''}`}>
+      <div
+        className={`microphone-control ${isRecording ? 'is-recording-active' : ''}`}
+      >
         <p className="app-title">{isRecording ? 'Stop Recording' : 'F5'}</p>
         {error && <p className="error-message">{error}</p>}
         <button
@@ -204,20 +246,22 @@ function Hello() {
           onMouseLeave={() => setShowTooltip(false)}
         >
           {isRecording ? (
-            <span className="red-dot-icon"></span> // Red dot icon
+            <span className="red-dot-icon" /> // Red dot icon
           ) : (
-            <span className="start-icon-white-dot"></span> // Start icon (white dot)
+            <span className="start-icon-white-dot" /> // Start icon (white dot)
           )}
           {showTooltip && (
             <div className="button-tooltip">
-              {isRecording ? 'Stop Recording' : 'Start Recording'}<br />(F5)
+              {isRecording ? 'Stop Recording' : 'Start Recording'}
+              <br />
+              (F5)
             </div>
           )}
         </button>
         {isRecording && (
           <div className="audio-visualizer-container">
             <p className="recording-status">Recording audio...</p>
-            <canvas ref={canvasRef} width="300" height="100"></canvas>
+            <canvas ref={canvasRef} width="300" height="100" />
           </div>
         )}
       </div>
