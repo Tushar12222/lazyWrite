@@ -34,6 +34,7 @@ const TranscriptCard = React.forwardRef(
     const [copied, setCopied] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editedText, setEditedText] = useState(text);
+    const [showEditTooltip, setShowEditTooltip] = useState(false); // New state for edit tooltip
 
     const handleCopy = () => {
       navigator.clipboard.writeText(text);
@@ -52,7 +53,13 @@ const TranscriptCard = React.forwardRef(
     };
 
     return (
-      <div className="transcript-card" ref={ref} onClick={() => setIsEditing(true)}>
+      <div
+        className="transcript-card"
+        ref={ref}
+        onClick={() => setIsEditing(true)}
+        onMouseEnter={() => setShowEditTooltip(true)} // Show tooltip on hover
+        onMouseLeave={() => setShowEditTooltip(false)} // Hide tooltip on mouse leave
+      >
         {isEditing ? (
           <div className="edit-mode-container">
             <textarea
@@ -71,6 +78,9 @@ const TranscriptCard = React.forwardRef(
             <button onClick={handleCopy} className="copy-button">
               {copied ? 'Copied!' : <CopyIcon />}
             </button>
+            {showEditTooltip && ( // Render edit tooltip
+              <div className="edit-tooltip">Edit</div>
+            )}
           </>
         )}
       </div>

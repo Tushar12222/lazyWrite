@@ -224,10 +224,24 @@ li, a, h1, .Hello, .button-group, .message-response, .silver-drop {
   position: relative;
   transition: all 0.3s ease-in-out;
   border: 1px solid transparent; /* Add this line */
+  cursor: pointer; /* Add this line */
 }
 
 .transcript-card:hover {
   border-color: silver; /* Add this line */
+}
+
+.edit-tooltip {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: silver;
+  padding: 3px 7px;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  z-index: 1;
 }
 
 .copy-button {
