@@ -203,13 +203,41 @@ li, a, h1, .Hello, .button-group, .message-response, .silver-drop {
 
 .transcript-container {
   position: absolute;
-  top: 50%;
+  bottom: 150px; /* Position above the record button */
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   width: 80%;
-  max-height: 400px;
+  max-height: 300px; /* Adjust as needed */
   overflow-y: auto;
   color: silver;
-  font-size: 2rem;
+  font-size: 1.5rem; /* Smaller font size */
   text-align: center;
+  display: flex;
+  flex-direction: column-reverse; /* Latest at the bottom */
+}
+
+.transcript-card {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.copy-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: transparent;
+  border: 1px solid silver;
+  color: silver;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 3px 7px;
+}
+
+.copy-button:hover {
+  background-color: silver;
+  color: black;
 }

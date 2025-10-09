@@ -9,13 +9,32 @@ interface PythonAudioResponse {
   error?: string; // Keep for general errors
 }
 
+function TranscriptCard({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="transcript-card">
+      <p>{text}</p>
+      <button onClick={handleCopy} className="copy-button">
+        {copied ? 'Copied!' : 'Copy'}
+      </button>
+    </div>
+  );
+}
+
 function Hello() {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [toggleRecordingTrigger, setToggleRecordingTrigger] = useState(false); // New state for triggering
-  const [transcript, setTranscript] = useState('');
+  const [transcript, setTranscript] = useState<string[]>([]);
 
   const isRecordingRef = useRef(isRecording); // Ref to hold the latest isRecording state
   useEffect(() => {
@@ -219,9 +238,12 @@ function Hello() {
           const parsedResponse: PythonAudioResponse = JSON.parse(decodedString);
           if (parsedResponse.status === 'success' && parsedResponse.transcript) {
             console.log('Transcript from Python:', parsedResponse.transcript);
-            setTranscript(parsedResponse.transcript);
-            // You can now display this transcript in your UI
-            // For example, you might have a state variable to store the transcript
+            setTranscript((prevTranscripts) => {
+              if (prevTranscripts[prevTranscripts.length - 1] !== parsedResponse.transcript) {
+                return [...prevTranscripts, parsedResponse.transcript || ''];
+              }
+              return prevTranscripts;
+            });
           } else if (parsedResponse.status === 'error') {
             console.error('Error from Python:', parsedResponse.message || parsedResponse.error);
           }
@@ -302,9 +324,11 @@ function Hello() {
           </div>
         )}
       </div>
-      {transcript && (
+      {transcript.length > 0 && (
         <div className="transcript-container">
-          <p>{transcript}</p>
+          {transcript.map((item, index) => (
+            <TranscriptCard key={index} text={item} />
+          ))}
         </div>
       )}
     </div>
