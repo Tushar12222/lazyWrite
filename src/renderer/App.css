@@ -222,7 +222,12 @@ li, a, h1, .Hello, .button-group, .message-response, .silver-drop {
   padding: 15px;
   margin-bottom: 10px;
   position: relative;
-  transition: all 1s ease-in-out;
+  transition: all 0.3s ease-in-out;
+  border: 1px solid transparent; /* Add this line */
+}
+
+.transcript-card:hover {
+  border-color: silver; /* Add this line */
 }
 
 .copy-button {
