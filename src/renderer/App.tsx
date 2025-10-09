@@ -310,9 +310,29 @@ function Hello() {
 
   useEffect(() => {
     if (transcriptContainerRef.current) {
-      transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
+      // Delay scrolling slightly to allow DOM to update after animation
+      setTimeout(() => {
+        if (transcriptContainerRef.current) {
+          transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
+        }
+      }, 100); // A small delay, adjust as needed
     }
   }, [transcript]);
+
+  useEffect(() => {
+    const handleGlobalScroll = (event: WheelEvent) => {
+      if (transcriptContainerRef.current) {
+        event.preventDefault(); // Prevent default window scrolling
+        transcriptContainerRef.current.scrollTop += event.deltaY;
+      }
+    };
+
+    window.addEventListener('wheel', handleGlobalScroll, { passive: false });
+
+    return () => {
+      window.removeEventListener('wheel', handleGlobalScroll);
+    };
+  }, []); // Empty dependency array to run once on mount and cleanup on unmount
 
   return (
     <div className="empty-ui-container">
@@ -352,16 +372,11 @@ function Hello() {
           </div>
         )}
       </div>
-      <TransitionGroup className="transcript-container" ref={transcriptContainerRef}>
-        {transcript.map((item, index) => {
-          const nodeRef = React.createRef<HTMLDivElement>();
-          return (
-            <CSSTransition key={index} nodeRef={nodeRef} timeout={1000} classNames="transcript-card">
-              <TranscriptCard text={item} ref={nodeRef} />
-            </CSSTransition>
-          );
-        })}
-      </TransitionGroup>
+      <div className="transcript-container" ref={transcriptContainerRef}>
+        {transcript.map((item, index) => (
+          <TranscriptCard key={index} text={item} />
+        ))}
+      </div>
     </div>
   );
 }

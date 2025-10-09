@@ -214,7 +214,6 @@ li, a, h1, .Hello, .button-group, .message-response, .silver-drop {
   text-align: center;
   display: flex;
   flex-direction: column; /* Latest at the bottom */
-  justify-content: flex-end;
 }
 
 .transcript-card {
@@ -260,4 +259,39 @@ li, a, h1, .Hello, .button-group, .message-response, .silver-drop {
   opacity: 0;
   transform: scale(0.9);
   transition: all 300ms ease-in-out;
+}
+
+.transcript-card p {
+  font-weight: 300; /* Lighter weight */
+  color: white; /* More white */
+  font-size: 1.2rem; /* Slightly smaller for legibility */
+  line-height: 1.4; /* Improved line spacing */
+}
+
+.transcript-container::-webkit-scrollbar {
+  width: 12px; /* Always reserve space for scrollbar */
+}
+
+.transcript-container::-webkit-scrollbar-track {
+  background: transparent; /* Transparent track by default */
+  border-radius: 10px;
+}
+
+.transcript-container:hover::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.5); /* Darker background for the track on hover */
+}
+
+.transcript-container::-webkit-scrollbar-thumb {
+  background: transparent; /* Transparent thumb by default */
+  border-radius: 10px;
+  border: 3px solid transparent; /* Transparent border by default */
+}
+
+.transcript-container:hover::-webkit-scrollbar-thumb {
+  background: rgba(80, 80, 80, 0.7); /* Even darker grey color for the thumb on hover */
+  border: 3px solid rgba(0, 0, 0, 0.5); /* Padding around the thumb on hover */
+}
+
+.transcript-container:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(80, 80, 80, 1); /* Even darker grey on hover */
 }
