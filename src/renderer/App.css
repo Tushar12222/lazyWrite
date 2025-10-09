@@ -211,6 +211,8 @@ li, a, h1, .Hello, .button-group, .message-response, .silver-drop {
   overflow-y: auto;
   color: silver;
   font-size: 1.5rem; /* Smaller font size */
+  text-align: center;
+  display: flex;
   flex-direction: column; /* Ensure vertical stacking */
   justify-content: flex-start; /* Align items to the start of the cross axis */
   align-items: center; /* Center items horizontally */
@@ -223,7 +225,7 @@ li, a, h1, .Hello, .button-group, .message-response, .silver-drop {
   margin-bottom: 10px;
   position: relative;
   transition: all 0.3s ease-in-out;
-  border: 1px solid transparent; /* Add this line */
+  border: 1px solid transparent;
   cursor: pointer;
   width: 100%; /* Take full width of parent */
   box-sizing: border-box; /* Include padding in width */
@@ -408,4 +410,39 @@ li, a, h1, .Hello, .button-group, .message-response, .silver-drop {
   line-height: 1.5;
   font-weight: 300; /* Lighter font weight */
   text-shadow: 0 0 5px rgba(192, 192, 192, 0.1); /* Very subtle text glow */
+}
+
+.processing-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.processing-button {
+  background-color: rgba(128, 128, 128, 0.5); /* Greyed out */
+  border: 1px solid rgba(192, 192, 192, 0.5);
+  color: silver;
+  cursor: not-allowed;
+  font-size: 1rem;
+  padding: 10px 20px;
+  border-radius: 5px;
+  width: 150px; /* Fixed width for consistency */
+  text-align: center;
+}
+
+.cancel-processing-button {
+  background-color: transparent;
+  border: 1px solid red;
+  color: red;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 5px 10px;
+  transition: all 0.3s ease-in-out;
+}
+
+.cancel-processing-button:hover {
+  background-color: red;
+  color: white;
 }

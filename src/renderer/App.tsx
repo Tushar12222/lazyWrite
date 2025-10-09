@@ -98,6 +98,7 @@ function Hello() {
   const [showTooltip, setShowTooltip] = useState(false);
   const [toggleRecordingTrigger, setToggleRecordingTrigger] = useState(false); // New state for triggering
   const [transcript, setTranscript] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false); // New state for processing
 
   const isRecordingRef = useRef(isRecording); // Ref to hold the latest isRecording state
   useEffect(() => {
@@ -165,6 +166,7 @@ function Hello() {
               'send-audio-to-python',
               { audio: base64Audio }, // Wrap in a JSON object
             );
+            setIsProcessing(true); // Set processing to true here
           }
         };
         audioChunksRef.current = []; // Clear chunks after sending
@@ -312,6 +314,8 @@ function Hello() {
           }
         } catch (parseError) {
           console.error('Error parsing Python response:', parseError);
+        } finally {
+          setIsProcessing(false); // Set processing to false here
         }
       },
     );
@@ -397,26 +401,45 @@ function Hello() {
       >
         
         {error && <p className="error-message">{error}</p>}
-        <button
-          type="button"
-          onClick={isRecording ? stopRecording : startRecording}
-          className={`record-button ${isRecording ? 'is-recording-active' : ''}`}
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
-        >
-          {isRecording ? (
-            <span className="red-dot-icon" /> // Red dot icon
-          ) : (
-            <span className="start-icon-white-dot" /> // Start icon (white dot)
-          )}
-          {showTooltip && (
-            <div className="button-tooltip">
-              {isRecording ? 'Stop Recording' : 'Start Recording'}
-              <br />
-              (F5)
-            </div>
-          )}
-        </button>
+        {isProcessing ? (
+          <div className="processing-state">
+            <button
+              type="button"
+              className="record-button processing-button"
+              disabled
+            >
+              Processing...
+            </button>
+            <button
+              type="button"
+              className="cancel-processing-button"
+              onClick={() => setIsProcessing(false)} // Allow user to cancel processing
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={isRecording ? stopRecording : startRecording}
+            className={`record-button ${isRecording ? 'is-recording-active' : ''}`}
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+          >
+            {isRecording ? (
+              <span className="red-dot-icon" /> // Red dot icon
+            ) : (
+              <span className="start-icon-white-dot" /> // Start icon (white dot)
+            )}
+            {showTooltip && (
+              <div className="button-tooltip">
+                {isRecording ? 'Stop Recording' : 'Start Recording'}
+                <br />
+                (F5)
+              </div>
+            )}
+          </button>
+        )}
         {isRecording && (
           <div className="audio-visualizer-container">
             <canvas ref={canvasRef} width="300" height="100" />
