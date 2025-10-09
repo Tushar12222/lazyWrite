@@ -269,8 +269,29 @@ li, a, h1, .Hello, .button-group, .message-response, .silver-drop {
 .transcript-card p {
   font-weight: 300; /* Lighter weight */
   color: white; /* More white */
-  font-size: 1.2rem; /* Slightly smaller for legibility */
-  line-height: 1.4; /* Improved line spacing */
+  font-size: 1rem; /* Reduced font size */
+  line-height: 1.8; /* Increased line spacing */
+  margin-right: 72px; /* Add space to the right of the text, accounting for scrollbar */
+  max-height: 100px; /* Set a max height for scrollable content */
+  overflow-y: auto; /* Enable vertical scrolling */
+}
+
+.transcript-card p::-webkit-scrollbar {
+  width: 8px; /* Smaller scrollbar for internal content */
+}
+
+.transcript-card p::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+}
+
+.transcript-card p::-webkit-scrollbar-thumb {
+  background: rgba(80, 80, 80, 0.5);
+  border-radius: 10px;
+}
+
+.transcript-card p::-webkit-scrollbar-thumb:hover {
+  background: rgba(80, 80, 80, 0.8);
 }
 
 .transcript-container::-webkit-scrollbar {
