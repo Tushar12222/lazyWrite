@@ -210,9 +210,12 @@ function Hello() {
     const cleanup = window.electron.ipcRenderer.on(
       'python-audio-response',
       // eslint-disable-next-line consistent-return
-      (response: string) => {
+      (response: Uint8Array) => {
         try {
-          const parsedResponse: PythonAudioResponse = JSON.parse(response);
+          console.log(response) 
+          const decoder = new TextDecoder("utf-8");
+          const decodedString = decoder.decode(response);
+          const parsedResponse: PythonAudioResponse = JSON.parse(decodedString);
           if (parsedResponse.status === 'success' && parsedResponse.transcript) {
             console.log('Transcript from Python:', parsedResponse.transcript);
             // You can now display this transcript in your UI
