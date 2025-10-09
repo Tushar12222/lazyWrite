@@ -3,7 +3,6 @@ import { ipcMain, BrowserWindow } from 'electron';
 
 export default function registerPythonMessageHandlers(
   pythonProcess: ChildProcessWithoutNullStreams,
-  mainWindow: BrowserWindow,
 ) {
   pythonProcess.stderr.on('data', (data) => {
     console.error(`Python stderr: ${data}`);
