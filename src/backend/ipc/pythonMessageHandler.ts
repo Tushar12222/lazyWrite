@@ -30,7 +30,9 @@ export default function registerPythonMessageHandlers(
 
   // IPC handler for sending audio data to Python
   ipcMain.on('send-audio-to-python', (event, audioData) => {
+    console.log('Main process received audio data from renderer.'); // New log
     if (pythonProcess) {
+      console.log('Main process writing to Python stdin.'); // New log
       pythonProcess.stdin.write(`${JSON.stringify(audioData)}\n`);
     } else {
       console.error(`Python process not running.`);
