@@ -1,5 +1,6 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import './App.css';
 
 interface PythonAudioResponse {
@@ -9,12 +10,95 @@ interface PythonAudioResponse {
   error?: string; // Keep for general errors
 }
 
+function CopyIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+    </svg>
+  );
+}
+
+const TranscriptCard = React.forwardRef(
+  (
+    { text, onSave }: { text: string; onSave: (newText: string) => void },
+    ref: React.Ref<HTMLDivElement>,
+  ) => {
+    const [copied, setCopied] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedText, setEditedText] = useState(text);
+    const [showEditTooltip, setShowEditTooltip] = useState(false); // New state for edit tooltip
+
+    const handleCopy = () => {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleSave = () => {
+      onSave(editedText);
+      setIsEditing(false);
+    };
+
+    const handleCancel = () => {
+      setEditedText(text);
+      setIsEditing(false);
+    };
+
+    return (
+      <div
+        className="transcript-card"
+        ref={ref}
+        onClick={() => setIsEditing(true)}
+        onMouseEnter={() => setShowEditTooltip(true)} // Show tooltip on hover
+        onMouseLeave={() => setShowEditTooltip(false)} // Hide tooltip on mouse leave
+      >
+        {isEditing ? (
+          <div className="edit-mode-container">
+            <textarea
+              className="edit-textarea"
+              value={editedText}
+              onChange={(e) => setEditedText(e.target.value)}
+            />
+            <div className="edit-buttons">
+              <button onClick={(e) => { e.stopPropagation(); handleSave(); }} className="save-button">Save</button>
+              <button onClick={(e) => { e.stopPropagation(); handleCancel(); }} className="cancel-button">Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p>{text}</p>
+            <button onClick={handleCopy} className="copy-button">
+              {copied ? 'Copied!' : <CopyIcon />}
+            </button>
+            {showEditTooltip && ( // Render edit tooltip
+              <div className="edit-tooltip">Edit</div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  },
+);
+
 function Hello() {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [toggleRecordingTrigger, setToggleRecordingTrigger] = useState(false); // New state for triggering
+  const [transcript, setTranscript] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false); // New state for processing
 
   const isRecordingRef = useRef(isRecording); // Ref to hold the latest isRecording state
   useEffect(() => {
@@ -82,6 +166,7 @@ function Hello() {
               'send-audio-to-python',
               { audio: base64Audio }, // Wrap in a JSON object
             );
+            setIsProcessing(true); // Set processing to true here
           }
         };
         audioChunksRef.current = []; // Clear chunks after sending
@@ -210,18 +295,27 @@ function Hello() {
     const cleanup = window.electron.ipcRenderer.on(
       'python-audio-response',
       // eslint-disable-next-line consistent-return
-      (response: string) => {
+      (response: Uint8Array) => {
         try {
-          const parsedResponse: PythonAudioResponse = JSON.parse(response);
+          console.log(response) 
+          const decoder = new TextDecoder("utf-8");
+          const decodedString = decoder.decode(response);
+          const parsedResponse: PythonAudioResponse = JSON.parse(decodedString);
           if (parsedResponse.status === 'success' && parsedResponse.transcript) {
             console.log('Transcript from Python:', parsedResponse.transcript);
-            // You can now display this transcript in your UI
-            // For example, you might have a state variable to store the transcript
+            setTranscript((prevTranscripts) => {
+              if (prevTranscripts[prevTranscripts.length - 1] !== parsedResponse.transcript) {
+                return [...prevTranscripts, parsedResponse.transcript || ''];
+              }
+              return prevTranscripts;
+            });
           } else if (parsedResponse.status === 'error') {
             console.error('Error from Python:', parsedResponse.message || parsedResponse.error);
           }
         } catch (parseError) {
           console.error('Error parsing Python response:', parseError);
+        } finally {
+          setIsProcessing(false); // Set processing to false here
         }
       },
     );
@@ -259,6 +353,42 @@ function Hello() {
     };
   }, [toggleRecordingListener]); // Dependency on the stable toggleRecordingListener
 
+  const transcriptContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleSaveTranscript = useCallback((index: number, newText: string) => {
+    setTranscript((prevTranscripts) => {
+      const newTranscripts = [...prevTranscripts];
+      newTranscripts[index] = newText;
+      return newTranscripts;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (transcriptContainerRef.current) {
+      // Delay scrolling slightly to allow DOM to update after animation
+      setTimeout(() => {
+        if (transcriptContainerRef.current) {
+          transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
+        }
+      }, 100); // A small delay, adjust as needed
+    }
+  }, [transcript]);
+
+  useEffect(() => {
+    const handleGlobalScroll = (event: WheelEvent) => {
+      if (transcriptContainerRef.current) {
+        event.preventDefault(); // Prevent default window scrolling
+        transcriptContainerRef.current.scrollTop += event.deltaY;
+      }
+    };
+
+    window.addEventListener('wheel', handleGlobalScroll, { passive: false });
+
+    return () => {
+      window.removeEventListener('wheel', handleGlobalScroll);
+    };
+  }, []); // Empty dependency array to run once on mount and cleanup on unmount
+
   return (
     <div className="empty-ui-container">
       <div className="static-line top" />
@@ -269,33 +399,62 @@ function Hello() {
       <div
         className={`microphone-control ${isRecording ? 'is-recording-active' : ''}`}
       >
-        <p className="app-title">{isRecording ? 'Stop Recording' : 'F5'}</p>
+        
         {error && <p className="error-message">{error}</p>}
-        <button
-          type="button"
-          onClick={isRecording ? stopRecording : startRecording}
-          className={`record-button ${isRecording ? 'is-recording-active' : ''}`}
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
-        >
-          {isRecording ? (
-            <span className="red-dot-icon" /> // Red dot icon
-          ) : (
-            <span className="start-icon-white-dot" /> // Start icon (white dot)
-          )}
-          {showTooltip && (
-            <div className="button-tooltip">
-              {isRecording ? 'Stop Recording' : 'Start Recording'}
-              <br />
-              (F5)
-            </div>
-          )}
-        </button>
+        {isProcessing ? (
+          <div className="processing-state">
+            <button
+              type="button"
+              className="record-button processing-button"
+              disabled
+            >
+              Processing...
+            </button>
+            <button
+              type="button"
+              className="cancel-processing-button"
+              onClick={() => setIsProcessing(false)} // Allow user to cancel processing
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={isRecording ? stopRecording : startRecording}
+            className={`record-button ${isRecording ? 'is-recording-active' : ''}`}
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+          >
+            {isRecording ? (
+              <span className="red-dot-icon" /> // Red dot icon
+            ) : (
+              <span className="start-icon-white-dot" /> // Start icon (white dot)
+            )}
+            {showTooltip && (
+              <div className="button-tooltip">
+                {isRecording ? 'Stop Recording' : 'Start Recording'}
+                <br />
+                (F5)
+              </div>
+            )}
+          </button>
+        )}
         {isRecording && (
           <div className="audio-visualizer-container">
-            <p className="recording-status">Recording audio...</p>
             <canvas ref={canvasRef} width="300" height="100" />
           </div>
+        )}
+      </div>
+      <div className="transcript-container" ref={transcriptContainerRef}>
+        {transcript.length === 0 ? (
+          <div className="no-output-banner">
+            <p>Press F5 to transcribe or click the button below.</p>
+          </div>
+        ) : (
+          transcript.map((item, index) => (
+            <TranscriptCard key={index} text={item} onSave={(newText) => handleSaveTranscript(index, newText)} />
+          ))
         )}
       </div>
     </div>
