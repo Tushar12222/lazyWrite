@@ -30,7 +30,10 @@ function CopyIcon() {
 }
 
 const TranscriptCard = React.forwardRef(
-  ({ text, onSave }: { text: string; onSave: (newText: string) => void }, ref) => {
+  (
+    { text, onSave }: { text: string; onSave: (newText: string) => void },
+    ref: React.Ref<HTMLDivElement>,
+  ) => {
     const [copied, setCopied] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editedText, setEditedText] = useState(text);
