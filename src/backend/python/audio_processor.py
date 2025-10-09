@@ -4,10 +4,16 @@ import base64
 import tempfile
 import os
 import whisper
-from whisper import Whisper
-from typing import cast
+from whisper import Whisper, audio
+from typing import cast, Optional
+import subprocess
+import numpy as np
 
 whisper_model: Whisper
+
+def log(message: str):
+    print(message)
+    sys.stdout.flush()
 
 def decode_base64_to_bytes(audio_base64: str) -> tuple[bytes | None, str | None]:
     try:
@@ -15,35 +21,60 @@ def decode_base64_to_bytes(audio_base64: str) -> tuple[bytes | None, str | None]
     except Exception as e:
         return (None, f"Failed to decode the base64 string with error: ${str(e)}")
 
-# Placeholder for Whisper processing
-def process_audio_with_whisper(audio_file_path):
-    
-    print(f"Processing audio file with Whisper: {audio_file_path}")
-    return f"Transcript from {audio_file_path}: This is a simulated transcript."
+def convert_audio_to_whisper_format(audio_base64: str, sr: int = 16000) -> tuple[bytes | None, str | None]:
+    cmd = [
+        "ffmpeg",
+        "-nostdin",
+        "-threads", "0",
+        "-i", "pipe:0",       
+        "-f", "s16le",             
+        "-ac", "1",                
+        "-acodec", "pcm_s16le",    
+        "-ar", str(sr),            
+        "-"                   
+    ]
+
+    try:
+        audio_bytes, error = decode_base64_to_bytes(audio_base64)
+        if error:
+            return (None, error)
+        audio_bytes = cast(bytes, audio_bytes)
+
+        audio_bytes = subprocess.run(cmd, input=audio_bytes, capture_output=True, check=True).stdout
+        return np.frombuffer(audio_bytes, np.int16).flatten().astype(np.float32) / 32768.0
+    except FileNotFoundError:
+        return (None, "ffmpeg not found. Make sure it is installed and available in PATH.")
+
+    except Exception as e:
+        return (None, f"Unexpected error while decoding audio: {e}")
+
+
+def process_audio_with_whisper(base64_audio_data: str) -> tuple[str | None, str | None]:
+    try:
+        result = whisper_model.transcribe(base64_audio_data)
+        return (result["text"], None)
+    except Exception as e:
+        return (None, f"Failed to process audio with whisper with error: {str(e)}")
 
 def process_audio_data(base64_audio_data: str):
-    print(f"Python received Base64 audio data (first 50 chars): {base64_audio_data[:50]}...") # New print statement
-    
-    # Decode Base64 audio data
-    audio_bytes, error = decode_base64_to_bytes(base64_audio_data)
+    transcript, error = process_audio_with_whisper(base64_audio_data)
     if error:
-        return [None, error]
-    audio_bytes = cast(bytes, audio_bytes)
-    assert isinstance(audio_bytes, bytes, f"Decoded audio bytes is not valid type.")
-
-    transcript = process_audio_with_whisper(audio_bytes)
-
+        raise Exception(error)
+    transcript = cast(str, transcript)
+    assert isinstance(transcript, str)
 
     return {"status": "success", "transcript": transcript}
 
 if __name__ == "__main__":
-    whisper_model = whisper.load_model("./ai_models/whisper/tiny.pt", device="cpu")
+    audio.load_audio = convert_audio_to_whisper_format
+    os.environ["XDG_CACHE_HOME"] = "./src/backend/python/ai_models"
+    whisper_model = whisper.load_model("tiny", device="cpu")
+    sys.stdout.flush()
     for line in sys.stdin:
-        print(f"Python received raw input: {line[:100]}...") # Removed file=sys.stderr
         try:
             input_data = json.loads(line)
             # Expecting input_data to be a JSON object like { "audio": "base64string" }
-            base64_audio_data = input_data.get("audio")
+            base64_audio_data: str = input_data.get("audio")
             if base64_audio_data:
                 result = process_audio_data(base64_audio_data)
                 print(json.dumps(result))
