@@ -424,9 +424,15 @@ function Hello() {
         )}
       </div>
       <div className="transcript-container" ref={transcriptContainerRef}>
-        {transcript.map((item, index) => (
-          <TranscriptCard key={index} text={item} onSave={(newText) => handleSaveTranscript(index, newText)} />
-        ))}
+        {transcript.length === 0 ? (
+          <div className="no-output-banner">
+            <p>Press F5 to transcribe or click the button below.</p>
+          </div>
+        ) : (
+          transcript.map((item, index) => (
+            <TranscriptCard key={index} text={item} onSave={(newText) => handleSaveTranscript(index, newText)} />
+          ))
+        )}
       </div>
     </div>
   );

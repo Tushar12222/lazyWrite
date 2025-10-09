@@ -211,9 +211,9 @@ li, a, h1, .Hello, .button-group, .message-response, .silver-drop {
   overflow-y: auto;
   color: silver;
   font-size: 1.5rem; /* Smaller font size */
-  text-align: center;
-  display: flex;
-  flex-direction: column; /* Latest at the bottom */
+  flex-direction: column; /* Ensure vertical stacking */
+  justify-content: flex-start; /* Align items to the start of the cross axis */
+  align-items: center; /* Center items horizontally */
 }
 
 .transcript-card {
@@ -224,7 +224,10 @@ li, a, h1, .Hello, .button-group, .message-response, .silver-drop {
   position: relative;
   transition: all 0.3s ease-in-out;
   border: 1px solid transparent; /* Add this line */
-  cursor: pointer; /* Add this line */
+  cursor: pointer;
+  width: 100%; /* Take full width of parent */
+  box-sizing: border-box; /* Include padding in width */
+  text-align: left; /* Align content to the left */
 }
 
 .transcript-card:hover {
@@ -383,4 +386,26 @@ li, a, h1, .Hello, .button-group, .message-response, .silver-drop {
 
 .transcript-container:hover::-webkit-scrollbar-thumb:hover {
   background: rgba(80, 80, 80, 1); /* Even darker grey on hover */
+}
+
+.no-output-banner {
+  text-align: center;
+  color: silver; /* Consistent with theme */
+  font-size: 1.2rem;
+  padding: 20px;
+  border: 1px solid rgba(192, 192, 192, 0.3); /* Softer border */
+  border-radius: 8px; /* Slightly rounded corners */
+  width: 80%;
+  max-width: 400px; /* A bit narrower for better focus */
+  box-sizing: border-box;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
+  box-shadow: 0 0 15px rgba(192, 192, 192, 0.2); /* Subtle silver glow */
+  margin: auto; /* This will center it within a flex container */
+}
+
+.no-output-banner p {
+  margin: 0;
+  line-height: 1.5;
+  font-weight: 300; /* Lighter font weight */
+  text-shadow: 0 0 5px rgba(192, 192, 192, 0.1); /* Very subtle text glow */
 }
