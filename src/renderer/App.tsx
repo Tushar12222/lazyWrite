@@ -15,6 +15,7 @@ function Hello() {
   const [error, setError] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [toggleRecordingTrigger, setToggleRecordingTrigger] = useState(false); // New state for triggering
+  const [transcript, setTranscript] = useState('');
 
   const isRecordingRef = useRef(isRecording); // Ref to hold the latest isRecording state
   useEffect(() => {
@@ -218,6 +219,7 @@ function Hello() {
           const parsedResponse: PythonAudioResponse = JSON.parse(decodedString);
           if (parsedResponse.status === 'success' && parsedResponse.transcript) {
             console.log('Transcript from Python:', parsedResponse.transcript);
+            setTranscript(parsedResponse.transcript);
             // You can now display this transcript in your UI
             // For example, you might have a state variable to store the transcript
           } else if (parsedResponse.status === 'error') {
@@ -272,7 +274,7 @@ function Hello() {
       <div
         className={`microphone-control ${isRecording ? 'is-recording-active' : ''}`}
       >
-        <p className="app-title">{isRecording ? 'Stop Recording' : 'F5'}</p>
+        
         {error && <p className="error-message">{error}</p>}
         <button
           type="button"
@@ -296,11 +298,15 @@ function Hello() {
         </button>
         {isRecording && (
           <div className="audio-visualizer-container">
-            <p className="recording-status">Recording audio...</p>
             <canvas ref={canvasRef} width="300" height="100" />
           </div>
         )}
       </div>
+      {transcript && (
+        <div className="transcript-container">
+          <p>{transcript}</p>
+        </div>
+      )}
     </div>
   );
 }

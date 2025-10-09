@@ -196,7 +196,20 @@ body {
 }
 
 /* Remove all other previous styles */
-li, a, h1, p, .Hello, .button-group, .message-response, .silver-drop {
+li, a, h1, .Hello, .button-group, .message-response, .silver-drop {
   all: unset; /* Reset all properties */
   display: none; /* Hide them completely */
+}
+
+.transcript-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-height: 400px;
+  overflow-y: auto;
+  color: silver;
+  font-size: 2rem;
+  text-align: center;
 }
