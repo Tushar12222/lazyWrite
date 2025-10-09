@@ -29,24 +29,54 @@ function CopyIcon() {
   );
 }
 
-const TranscriptCard = React.forwardRef(({ text }: { text: string }, ref) => {
-  const [copied, setCopied] = useState(false);
+const TranscriptCard = React.forwardRef(
+  ({ text, onSave }: { text: string; onSave: (newText: string) => void }, ref) => {
+    const [copied, setCopied] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedText, setEditedText] = useState(text);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+    const handleCopy = () => {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
 
-  return (
-    <div className="transcript-card" ref={ref}>
-      <p>{text}</p>
-      <button onClick={handleCopy} className="copy-button">
-        {copied ? 'Copied!' : <CopyIcon />}
-      </button>
-    </div>
-  );
-});
+    const handleSave = () => {
+      onSave(editedText);
+      setIsEditing(false);
+    };
+
+    const handleCancel = () => {
+      setEditedText(text);
+      setIsEditing(false);
+    };
+
+    return (
+      <div className="transcript-card" ref={ref} onClick={() => setIsEditing(true)}>
+        {isEditing ? (
+          <div className="edit-mode-container">
+            <textarea
+              className="edit-textarea"
+              value={editedText}
+              onChange={(e) => setEditedText(e.target.value)}
+            />
+            <div className="edit-buttons">
+              <button onClick={(e) => { e.stopPropagation(); handleSave(); }} className="save-button">Save</button>
+              <button onClick={(e) => { e.stopPropagation(); handleCancel(); }} className="cancel-button">Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p>{text}</p>
+            <button onClick={handleCopy} className="copy-button">
+              {copied ? 'Copied!' : <CopyIcon />}
+            </button>
+          </>
+        )}
+      </div>
+    );
+  },
+);
 
 function Hello() {
   const [isRecording, setIsRecording] = useState(false);
@@ -308,6 +338,14 @@ function Hello() {
 
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
 
+  const handleSaveTranscript = useCallback((index: number, newText: string) => {
+    setTranscript((prevTranscripts) => {
+      const newTranscripts = [...prevTranscripts];
+      newTranscripts[index] = newText;
+      return newTranscripts;
+    });
+  }, []);
+
   useEffect(() => {
     if (transcriptContainerRef.current) {
       // Delay scrolling slightly to allow DOM to update after animation
@@ -374,7 +412,7 @@ function Hello() {
       </div>
       <div className="transcript-container" ref={transcriptContainerRef}>
         {transcript.map((item, index) => (
-          <TranscriptCard key={index} text={item} />
+          <TranscriptCard key={index} text={item} onSave={(newText) => handleSaveTranscript(index, newText)} />
         ))}
       </div>
     </div>
