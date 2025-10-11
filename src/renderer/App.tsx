@@ -105,6 +105,11 @@ function Hello() {
     isRecordingRef.current = isRecording; // Keep ref updated with latest state
   }, [isRecording]);
 
+  const isProcessingRef = useRef(isProcessing); // Ref to hold the latest isProcessing state
+  useEffect(() => {
+    isProcessingRef.current = isProcessing; // Keep ref updated with latest state
+  }, [isProcessing]);
+
   const mediaStreamRef = useRef<MediaStream | null>(null); // Ref to hold the latest mediaStream
   useEffect(() => {
     mediaStreamRef.current = mediaStream;
@@ -339,7 +344,9 @@ function Hello() {
 
   // Handle global shortcut for recording
   const toggleRecordingListener = useCallback(() => {
-    setToggleRecordingTrigger((prev) => !prev);
+    if (!isProcessingRef.current) {
+      setToggleRecordingTrigger((prev) => !prev);
+    }
   }, []);
 
   useEffect(() => {

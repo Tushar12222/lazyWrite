@@ -31,3 +31,6 @@ npm-debug.log.*
 
 .venv
 ai_models
+build
+dist
+ffmpeg
