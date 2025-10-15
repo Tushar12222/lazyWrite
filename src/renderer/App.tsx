@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import './App.css';
 
 interface PythonAudioResponse {
